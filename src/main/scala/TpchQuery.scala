@@ -5,7 +5,10 @@ import org.apache.spark.SparkConf
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
+
 import org.apache.spark.sql._
+import org.joda.time.DateTime
+
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -42,11 +45,7 @@ object TpchQuery {
       df.write.mode("overwrite").format("com.databricks.spark.csv").option("header", "true").save(outputDir + "/" + className)
   }
 
-  def executeQueries(sc: SparkContext, schemaProvider: TpchSchemaProvider, queryNum: Int): ListBuffer[(String, Float)] = {
-
-    // if set write results to hdfs, if null write to stdout
-    // val OUTPUT_DIR: String = "/tpch"
-    val OUTPUT_DIR: String = "file://" + new File(".").getAbsolutePath() + "/dbgen/output"
+  def executeQueries(sc: SparkContext, schemaProvider: TpchSchemaProvider, queryNum: Int,outPutDir:String): ListBuffer[(String, Float)] = {
 
     val results = new ListBuffer[(String, Float)]
 
@@ -62,7 +61,7 @@ object TpchQuery {
 
       val query = Class.forName(f"main.scala.Q${queryNo}%02d").newInstance.asInstanceOf[TpchQuery]
 
-      outputDF(query.execute(sc, schemaProvider), OUTPUT_DIR, query.getName())
+      outputDF(query.execute(sc, schemaProvider), outPutDir, query.getName())
 
       val t1 = System.nanoTime()
 
@@ -76,11 +75,12 @@ object TpchQuery {
 
   def main(args: Array[String]): Unit = {
 
+    // 读取传入参数，判断是否执行单个query
     var queryNum = 0;
     if (args.length > 0)
       queryNum = args(0).toInt
 
-    val conf = new SparkConf().setAppName("Simple Application")
+    val conf = new SparkConf().setAppName(this.getClass.getSimpleName)
     val sc = new SparkContext(conf)
 
     // read files from local FS
@@ -89,12 +89,20 @@ object TpchQuery {
     // read from hdfs
     // val INPUT_DIR: String = "/dbgen"
 
+    // if set write results to hdfs, if null write to stdout
+    // val OUTPUT_DIR: String = "/tpch"
+    val OUTPUT_DIR: String = "file://" + new File(".").getAbsolutePath() + "/dbgen/output"
+
     val schemaProvider = new TpchSchemaProvider(sc, INPUT_DIR)
 
     val output = new ListBuffer[(String, Float)]
-    output ++= executeQueries(sc, schemaProvider, queryNum)
+    // 执行查询
+    output ++= executeQueries(sc, schemaProvider, queryNum,OUTPUT_DIR)
 
-    val outFile = new File("TIMES.txt")
+    val outFile = new File("TIMES.txt-"+DateTime.now())
+
+    println("查询结果时间记录存储："+outFile.getAbsolutePath)
+
     val bw = new BufferedWriter(new FileWriter(outFile, true))
 
     output.foreach {
