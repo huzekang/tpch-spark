@@ -71,8 +71,17 @@ spark-submit --class "main.scala.TpchQuery" --master local[*] spark-tpc-h-querie
 ```
 4. 查看测试结果
 ![](http://image-picgo.test.upcdn.net/img/20210513145745.png)
+
 打开结果。
 ![](http://image-picgo.test.upcdn.net/img/20210513150257.png)
+
+
+### 性能测试结果
+
+| 文件系统 | master   | 数据容量 | 总耗时 |
+| -------- | -------- | -------- | ------ |
+| localFS  | local[*] | 10G      | 794s   |
+
 
 ### Other Implementations
 
