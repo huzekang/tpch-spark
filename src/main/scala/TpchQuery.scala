@@ -105,9 +105,12 @@ object TpchQuery {
 
     val bw = new BufferedWriter(new FileWriter(outFile, true))
 
+    // 记录每个query的时间到记录文件
     output.foreach {
-      case (key, value) => bw.write(f"${key}%s\t${value}%1.8f\n")
+      case (key, value) => bw.write(f"${key}%s:\t${value}%1.8f\n")
     }
+    // 记录总耗时到记录文件
+    bw.write(s"总耗时:\t${output.map(_._2).sum}")
 
     bw.close()
   }
